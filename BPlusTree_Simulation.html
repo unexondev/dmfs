@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B+-Tree Simulation (parameter n)</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --line:#2a2f3d;
+    --txt:#e6e9ef; --muted:#9aa3b2; --accent:#4f8cff; --accent2:#ffb454;
+    --green:#3ddc97; --red:#ff6b6b; --purple:#b48cff; --node:#222838; --nodeStroke:#39415a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
+  header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:650}
+  header .sub{color:var(--muted);font-size:12.5px}
+  .wrap{display:flex;gap:0;min-height:calc(100vh - 56px)}
+  .side{width:330px;flex:none;border-right:1px solid var(--line);padding:16px;overflow:auto;background:var(--panel)}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .stage{flex:1;overflow:auto;background:
+      radial-gradient(circle at 20px 20px, #1a1e29 1px, transparent 0) 0 0/26px 26px, var(--bg);min-height:300px}
+  .explain{border-top:1px solid var(--line);background:var(--panel2);padding:12px 16px;min-height:96px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px}
+  h2:first-child{margin-top:0}
+  label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+  input[type=text],input[type=number]{width:100%;background:#0d0f15;border:1px solid var(--line);color:var(--txt);
+      padding:8px 10px;border-radius:7px;font-size:14px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:7px;
+      cursor:pointer;font-size:13px;font-family:inherit;transition:.12s}
+  button:hover{border-color:var(--accent);background:#232838}
+  button:active{transform:translateY(1px)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{background:#3a78f0}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .mini{padding:6px 8px;font-size:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{background:#0d0f15;border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+  .stat b{display:block;font-size:16px}
+  .stat span{color:var(--muted);font-size:11px}
+  .legend{font-size:12px}
+  .legend div{display:flex;align-items:center;gap:8px;padding:3px 0;color:var(--muted)}
+  .legend .dot{width:10px;height:10px;border-radius:3px;flex:none}
+  .cases label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;margin-bottom:5px;cursor:default}
+  .cases .chk{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .cases label.hit{color:var(--txt)}
+  .cases label.hit .chk{background:var(--green);border-color:var(--green);color:#06281c;font-weight:700}
+  .playbar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
+  .playbar .stepinfo{color:var(--muted);font-size:12px;min-width:96px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-right:8px;vertical-align:middle}
+  .msg{font-size:14px}
+  .constraints{font-size:12.5px;color:var(--muted)}
+  .constraints code{background:#0d0f15;border:1px solid var(--line);padding:1px 6px;border-radius:5px;color:var(--accent2)}
+  .note{font-size:11.5px;color:var(--muted);margin-top:6px}
+  svg text{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .hint{color:var(--muted);font-size:12px;text-align:center;padding:40px}
+  .seqbtns{display:flex;flex-direction:column;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>B+-Tree Simulation</h1>
+  <span class="sub">parameter <b>n</b> (order / fan-out) — leaf holds ⌈(n−1)/2⌉…n−1 keys, internal node ⌈n/2⌉…n children. Every insert & delete case is shown step-by-step.</span>
+</header>
+
+<div class="wrap">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <h2>Order parameter n</h2>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2">
+        <label>n =</label>
+        <input type="number" id="nVal" min="3" max="9" value="4">
+      </div>
+      <button class="primary" id="applyN" style="flex:3">Set n & reset</button>
+    </div>
+    <div class="note">Changing n rebuilds an empty tree. Slide examples use n=4 and n=6.</div>
+
+    <h2>Operations</h2>
+    <label>Key (number or word)</label>
+    <input type="text" id="keyIn" placeholder="e.g. 25  or  Adams" autocomplete="off">
+    <div class="grid3" style="margin-top:8px">
+      <button class="primary" id="insBtn">Insert</button>
+      <button id="delBtn">Delete</button>
+      <button id="srchBtn">Search</button>
+    </div>
+    <label style="margin-top:12px">Bulk insert (comma-separated)</label>
+    <input type="text" id="bulkIn" placeholder="10,20,5,30,25,35,15">
+    <button class="mini" id="bulkBtn" style="width:100%;margin-top:8px">Insert all</button>
+
+    <h2>Slide / case presets</h2>
+    <div class="seqbtns">
+      <button class="mini" data-seq="instr4">Instructor example, n=4 (build)</button>
+      <button class="mini" data-seq="instr6">Instructor example, n=6 (build)</button>
+      <button class="mini" data-seq="allInsert">Demo all INSERT cases (n=4)</button>
+      <button class="mini" data-seq="allDelete">Demo all DELETE cases (n=5)</button>
+    </div>
+    <button class="ghost mini" id="clearBtn" style="width:100%;margin-top:10px">Clear tree</button>
+
+    <h2>Cases covered this session</h2>
+    <div class="cases" id="caseList"></div>
+
+    <h2>Highlight legend</h2>
+    <div class="legend">
+      <div><span class="dot" style="background:#4f8cff"></span> node on the path / being read</div>
+      <div><span class="dot" style="background:#3ddc97"></span> node created / grown</div>
+      <div><span class="dot" style="background:#ffb454"></span> node split / redistributed</div>
+      <div><span class="dot" style="background:#ff6b6b"></span> node merged / removed</div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="stage" id="stage">
+      <div class="hint">Insert a key to begin — or pick a preset on the left.</div>
+    </div>
+
+    <div class="playbar">
+      <button class="mini" id="firstBtn">⏮</button>
+      <button class="mini" id="prevBtn">◀ Prev</button>
+      <button class="primary mini" id="playBtn" style="flex:none;min-width:84px">▶ Play</button>
+      <button class="mini" id="nextBtn">Next ▶</button>
+      <button class="mini" id="lastBtn">⏭</button>
+      <span class="stepinfo" id="stepInfo">step 0 / 0</span>
+      <span style="flex:1"></span>
+      <label style="margin:0;display:flex;align-items:center;gap:6px;color:var(--muted)">speed
+        <input type="range" id="speed" min="200" max="1600" value="750" style="width:90px">
+      </label>
+    </div>
+
+    <div class="explain">
+      <div id="msg" class="msg"><span class="constraints">For <b>n=4</b>: leaf keys <code>2…3</code> · internal children <code>2…4</code> · root-leaf <code>0…3</code> keys · height ≤ <code>⌈log₂(K)⌉</code>.</span></div>
+      <div class="constraints" id="constraints" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= B+-tree core (parameter n, Silberschatz) ================= */
+let T={root:null,n:4,idc:0};
+function cmp(a,b){const na=parseFloat(a),nb=parseFloat(b);
+  const an=(''+a).trim()!==''&&!isNaN(na),bn=(''+b).trim()!==''&&!isNaN(nb);
+  if(an&&bn)return na-nb; return (''+a)<(''+b)?-1:((''+a)>(''+b)?1:0);}
+function newNode(leaf){return{id:++T.idc,leaf,keys:[],children:[],next:null,parent:null};}
+function setChildren(node,arr){node.children=arr;arr.forEach(c=>c.parent=node);}
+const leafMin=n=>Math.ceil((n-1)/2);
+const intMinCh=n=>Math.ceil(n/2);
+
+function snapshot(node){ if(!node)return null;
+  return {id:node.id,leaf:node.leaf,keys:node.keys.slice(),
+          next:node.next?node.next.id:null,
+          children:node.leaf?[]:node.children.map(snapshot)};}
+function rec(steps,msg,hl,tag){steps.push({msg,hl:hl||[],tag:tag||'',snap:snapshot(T.root)});}
+
+function findLeaf(key,steps){let c=T.root;
+  while(c&&!c.leaf){ if(steps)rec(steps,`find(): at internal [${c.keys.join(', ')}] → pick child where key ${key} fits`,[c.id],'path');
+    let i=0;while(i<c.keys.length&&cmp(key,c.keys[i])>=0)i++; c=c.children[i];}
+  if(steps&&c)rec(steps,`find(): reached leaf [${c.keys.join(', ')}]`,[c.id],'path'); return c;}
+
+function insert(key,steps){key=''+key;
+  rec(steps,`INSERT "${key}"  —  n=${T.n}: a leaf may hold ⌈(n−1)/2⌉=${leafMin(T.n)}…${T.n-1} keys`,[]);
+  if(!T.root){T.root=newNode(true);T.root.keys=[key];
+    rec(steps,`Tree was empty → create root leaf holding "${key}". (A root leaf may hold 0…n−1 keys.)`,[T.root.id],'root-create');return;}
+  let leaf=findLeaf(key,steps);
+  if(leaf.keys.some(k=>cmp(k,key)===0)){rec(steps,`"${key}" already exists — duplicates disallowed, ignored.`,[leaf.id],'dup');return;}
+  let p=0;while(p<leaf.keys.length&&cmp(leaf.keys[p],key)<0)p++;leaf.keys.splice(p,0,key);
+  if(leaf.keys.length<=T.n-1){
+    rec(steps,`CASE ① Leaf has room: ${leaf.keys.length} ≤ n−1=${T.n-1}. Simple insertion, no split. → [${leaf.keys.join(', ')}]`,[leaf.id],'leaf-room');return;}
+  rec(steps,`CASE ② Leaf OVERFLOW: ${leaf.keys.length} keys = n (max n−1=${T.n-1}). Split required.`,[leaf.id],'leaf-overflow');
+  const keep=Math.ceil(T.n/2),right=newNode(true);
+  right.keys=leaf.keys.slice(keep);leaf.keys=leaf.keys.slice(0,keep);
+  right.next=leaf.next;leaf.next=right;const up=right.keys[0];
+  rec(steps,`Split leaf: first ⌈n/2⌉=${keep} keys stay [${leaf.keys.join(', ')}], rest → new leaf [${right.keys.join(', ')}]. COPY UP least key "${up}" to parent.`,[leaf.id,right.id],'leaf-split');
+  insertIntoParent(leaf,up,right,steps);}
+
+function insertIntoParent(left,key,right,steps){
+  if(left===T.root){const r=newNode(false);r.keys=[key];setChildren(r,[left,right]);T.root=r;
+    rec(steps,`CASE ③ Split reached the ROOT → new root [${key}] created. ⬆ TREE HEIGHT +1.`,[r.id,left.id,right.id],'root-split');return;}
+  const par=left.parent,i=par.children.indexOf(left);
+  par.keys.splice(i,0,key);par.children.splice(i+1,0,right);right.parent=par;
+  if(par.keys.length<=T.n-1){
+    rec(steps,`Parent had room → inserted separator "${key}". Parent = [${par.keys.join(', ')}], ${par.children.length} children ≤ n=${T.n}. Done.`,[par.id],'parent-room');return;}
+  rec(steps,`CASE ④ Internal node OVERFLOW: ${par.children.length} children > n=${T.n}. Split internal (middle key MOVES UP, not copied).`,[par.id],'int-overflow');
+  const keepCh=Math.ceil(T.n/2),rightN=newNode(false),up=par.keys[keepCh-1];
+  rightN.keys=par.keys.slice(keepCh);setChildren(rightN,par.children.slice(keepCh));
+  par.keys=par.keys.slice(0,keepCh-1);setChildren(par,par.children.slice(0,keepCh));
+  rec(steps,`Internal split: left keeps ${par.children.length} children [${par.keys.join(', ')}], new node gets ${rightN.children.length} children [${rightN.keys.join(', ')}]. PUSH UP "${up}".`,[par.id,rightN.id],'int-split');
+  insertIntoParent(par,up,rightN,steps);}
+
+function del(key,steps){key=''+key;
+  rec(steps,`DELETE "${key}"  —  n=${T.n}: leaf min ⌈(n−1)/2⌉=${leafMin(T.n)} keys, internal min ⌈n/2⌉=${intMinCh(T.n)} children`,[]);
+  if(!T.root){rec(steps,`Tree is empty.`,[],'empty');return;}
+  const leaf=findLeaf(key,steps);
+  const idx=leaf.keys.findIndex(k=>cmp(k,key)===0);
+  if(idx<0){rec(steps,`"${key}" not found — nothing to delete.`,[leaf.id],'notfound');return;}
+  leaf.keys.splice(idx,1);
+  rec(steps,`Removed "${key}" from leaf → [${leaf.keys.join(', ')}].`,[leaf.id],'remove');
+  if(leaf===T.root){rec(steps,leaf.keys.length===0?`Root leaf now empty (allowed: 0…n−1 keys).`:`Leaf is the root → no minimum applies. Done.`,[leaf.id],'root-leaf');return;}
+  if(leaf.keys.length>=leafMin(T.n)){
+    rec(steps,`CASE ⑤ No underflow: leaf has ${leaf.keys.length} ≥ ⌈(n−1)/2⌉=${leafMin(T.n)}. Done.`,[leaf.id],'no-underflow');return;}
+  rec(steps,`CASE ⑥ Leaf UNDERFLOW: ${leaf.keys.length} < ⌈(n−1)/2⌉=${leafMin(T.n)}. Fix by merge or redistribute.`,[leaf.id],'underflow');
+  fixUnderflow(leaf,steps);}
+
+function fixUnderflow(node,steps){
+  if(node===T.root){
+    if(!node.leaf&&node.children.length===1){T.root=node.children[0];T.root.parent=null;
+      rec(steps,`CASE ⑩ Root has only ONE child → remove root, child becomes new root. ⬇ TREE HEIGHT −1.`,[T.root.id],'root-shrink');}
+    return;}
+  const par=node.parent,i=par.children.indexOf(node);
+  const L=i>0?par.children[i-1]:null, R=i<par.children.length-1?par.children[i+1]:null;
+  const maxKeys=T.n-1,maxCh=T.n;
+  if(node.leaf){
+    if(L&&L.keys.length+node.keys.length<=maxKeys){
+      rec(steps,`CASE ⑦ Cannot stay underfull, fits with LEFT sibling → MERGE (coalesce). Concatenate keys into left, delete node, drop parent separator.`,[L.id,node.id],'merge');
+      L.keys=L.keys.concat(node.keys);L.next=node.next;par.keys.splice(i-1,1);par.children.splice(i,1);
+      afterParentShrink(par,steps);return;}
+    if(R&&R.keys.length+node.keys.length<=maxKeys){
+      rec(steps,`CASE ⑦ Fits with RIGHT sibling → MERGE (coalesce). Concatenate right's keys into node, delete right, drop parent separator.`,[node.id,R.id],'merge');
+      node.keys=node.keys.concat(R.keys);node.next=R.next;par.keys.splice(i,1);par.children.splice(i+1,1);
+      afterParentShrink(par,steps);return;}
+    if(L&&L.keys.length-1>=leafMin(T.n)){
+      const b=L.keys.pop();node.keys.unshift(b);par.keys[i-1]=node.keys[0];
+      rec(steps,`CASE ⑧ Cannot merge → REDISTRIBUTE: borrow largest "${b}" from LEFT sibling; update parent separator to "${node.keys[0]}".`,[L.id,node.id,par.id],'redistribute');return;}
+    if(R&&R.keys.length-1>=leafMin(T.n)){
+      const b=R.keys.shift();node.keys.push(b);par.keys[i]=R.keys[0];
+      rec(steps,`CASE ⑧ Cannot merge → REDISTRIBUTE: borrow smallest "${b}" from RIGHT sibling; update parent separator to "${R.keys[0]}".`,[node.id,R.id,par.id],'redistribute');return;}
+    return;
+  } else {
+    if(L&&L.children.length+node.children.length<=maxCh){
+      rec(steps,`CASE ⑨ Internal MERGE with LEFT sibling → pull DOWN parent separator "${par.keys[i-1]}", concatenate children.`,[L.id,node.id,par.id],'merge-int');
+      L.keys=L.keys.concat([par.keys[i-1]],node.keys);setChildren(L,L.children.concat(node.children));
+      par.keys.splice(i-1,1);par.children.splice(i,1);afterParentShrink(par,steps);return;}
+    if(R&&R.children.length+node.children.length<=maxCh){
+      rec(steps,`CASE ⑨ Internal MERGE with RIGHT sibling → pull DOWN parent separator "${par.keys[i]}", concatenate children.`,[node.id,R.id,par.id],'merge-int');
+      node.keys=node.keys.concat([par.keys[i]],R.keys);setChildren(node,node.children.concat(R.children));
+      par.keys.splice(i,1);par.children.splice(i+1,1);afterParentShrink(par,steps);return;}
+    if(L&&L.children.length-1>=intMinCh(T.n)){
+      const mc=L.children.pop(),mk=L.keys.pop();node.keys.unshift(par.keys[i-1]);par.keys[i-1]=mk;
+      node.children.unshift(mc);mc.parent=node;
+      rec(steps,`CASE ⑪ Internal REDISTRIBUTE via parent (from LEFT): rotate separator down, "${mk}" up, move one child pointer over.`,[L.id,node.id,par.id],'redistribute-int');return;}
+    if(R&&R.children.length-1>=intMinCh(T.n)){
+      const mc=R.children.shift(),mk=R.keys.shift();node.keys.push(par.keys[i]);par.keys[i]=mk;
+      node.children.push(mc);mc.parent=node;
+      rec(steps,`CASE ⑪ Internal REDISTRIBUTE via parent (from RIGHT): rotate separator down, "${mk}" up, move one child pointer over.`,[node.id,R.id,par.id],'redistribute-int');return;}
+    return;
+  }}
+function afterParentShrink(par,steps){
+  if(par===T.root){if(par.children.length===1)fixUnderflow(par,steps);return;}
+  if(par.children.length<intMinCh(T.n)){
+    rec(steps,`Parent now has ${par.children.length} children < ⌈n/2⌉=${intMinCh(T.n)} → underflow CASCADES upward.`,[par.id],'cascade');
+    fixUnderflow(par,steps);}}
+
+function search(key,steps){key=''+key;
+  rec(steps,`SEARCH find("${key}")`,[]);
+  if(!T.root){rec(steps,`Tree empty.`,[],'empty');return;}
+  let c=T.root;
+  while(c&&!c.leaf){rec(steps,`At internal [${c.keys.join(', ')}] → follow pointer for ${key}`,[c.id],'path');
+    let i=0;while(i<c.keys.length&&cmp(key,c.keys[i])>=0)i++;c=c.children[i];}
+  rec(steps,`At leaf [${c.keys.join(', ')}]`,[c.id],'path');
+  const found=c.keys.some(k=>cmp(k,key)===0);
+  rec(steps,found?`✓ Found "${key}". Return its record pointer.`:`✗ "${key}" not present. Return null.`,[c.id],found?'no-underflow':'notfound');}
+
+/* ================= rendering ================= */
+const KEYW=k=>Math.max(26,12+(''+k).length*9), GAP=26, LH=92, BOXH=34, PAD=24;
+function layout(root){const pos={};let cur=PAD;
+  const nodeW=node=>node.keys.length?node.keys.reduce((s,k)=>s+KEYW(k),0):46;
+  (function assign(node,depth){
+    if(node.leaf){const w=nodeW(node);pos[node.id]={w,x:cur+w/2,y:depth*LH+PAD,depth};cur+=w+GAP;}
+    else{node.children.forEach(c=>assign(c,depth+1));
+      const f=pos[node.children[0].id].x,l=pos[node.children[node.children.length-1].id].x;
+      pos[node.id]={w:nodeW(node),x:(f+l)/2,y:depth*LH+PAD,depth};}
+  })(root,0);
+  return {pos,width:cur+PAD};}
+function flat(node,arr){arr.push(node);if(!node.leaf)node.children.forEach(c=>flat(c,arr));return arr;}
+const tagColor=tag=>{
+  if(['root-create','leaf-room','no-underflow','root-leaf'].includes(tag))return'green';
+  if(['leaf-split','leaf-overflow','int-split','int-overflow','redistribute','redistribute-int','root-split'].includes(tag))return'orange';
+  if(['merge','merge-int','root-shrink','cascade','remove'].includes(tag))return'red';
+  return'blue';};
+function colorFor(tag){return{green:'#3ddc97',orange:'#ffb454',red:'#ff6b6b',blue:'#4f8cff'}[tagColor(tag)];}
+
+function render(snap,hl,tag){
+  const stage=document.getElementById('stage');
+  if(!snap){stage.innerHTML='<div class="hint">Tree is empty. Insert a key or choose a preset.</div>';return;}
+  const {pos,width}=layout(snap);
+  const nodes=flat(snap,[]);
+  let maxD=0;nodes.forEach(n=>maxD=Math.max(maxD,pos[n.id].depth));
+  const height=(maxD+1)*LH+PAD;
+  const hlset=new Set(hl||[]);const accent=colorFor(tag);
+  const posById={};nodes.forEach(n=>posById[n.id]=pos[n.id]);
+  let svg=`<svg width="${Math.max(width,600)}" height="${height+10}" viewBox="0 0 ${Math.max(width,600)} ${height+10}">`;
+  // parent-child edges
+  nodes.forEach(n=>{if(!n.leaf){const p=pos[n.id];
+    n.children.forEach(c=>{const cp=pos[c.id];
+      svg+=`<line x1="${p.x}" y1="${p.y+BOXH}" x2="${cp.x}" y2="${cp.y}" stroke="#39415a" stroke-width="1.4"/>`;});}});
+  // leaf next pointers
+  const leaves=nodes.filter(n=>n.leaf).sort((a,b)=>pos[a.id].x-pos[b.id].x);
+  leaves.forEach(lf=>{if(lf.next&&posById[lf.next]){const a=pos[lf.id],b=posById[lf.next];
+    const ax=a.x+a.w/2,ay=a.y+BOXH/2,bx=b.x-b.w/2;
+    svg+=`<path d="M ${ax} ${ay} C ${ax+18} ${ay+22}, ${bx-18} ${ay+22}, ${bx} ${ay}" fill="none" stroke="#46506e" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ar)"/>`;}});
+  svg+=`<defs><marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#46506e"/></marker></defs>`;
+  // nodes
+  nodes.forEach(n=>{const p=pos[n.id];const on=hlset.has(n.id);
+    const stroke=on?accent:'#39415a';const sw=on?2.4:1.2;
+    const fill=n.leaf?'#1b2233':'#232a3d';
+    let x=p.x-p.w/2;
+    if(n.keys.length===0){
+      svg+=`<rect x="${x}" y="${p.y}" width="46" height="${BOXH}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      svg+=`<text x="${x+23}" y="${p.y+BOXH/2+5}" fill="#6b7488" font-size="12" text-anchor="middle">∅</text>`;
+    } else {
+      svg+=`<rect x="${x}" y="${p.y}" width="${p.w}" height="${BOXH}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      let cx=x;n.keys.forEach((k,j)=>{const w=KEYW(k);
+        if(j>0)svg+=`<line x1="${cx}" y1="${p.y+4}" x2="${cx}" y2="${p.y+BOXH-4}" stroke="#39415a" stroke-width="1"/>`;
+        svg+=`<text x="${cx+w/2}" y="${p.y+BOXH/2+5}" fill="${on?'#fff':'#dfe5f0'}" font-size="13.5" font-weight="${on?700:500}" text-anchor="middle">${escapeHtml(k)}</text>`;
+        cx+=w;});
+    }
+    if(on){svg+=`<rect x="${x}" y="${p.y}" width="${n.keys.length?p.w:46}" height="${BOXH}" rx="6" fill="none" stroke="${accent}" stroke-width="${sw}"/>`;}
+  });
+  svg+=`</svg>`;
+  stage.innerHTML=svg;
+}
+function escapeHtml(s){return(''+s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* ================= step playback ================= */
+let steps=[],idx=0,timer=null;
+function runOp(fn){if(timer)stopPlay();steps=[];fn(steps);
+  if(steps.length===0){return;} idx=0;showStep();markCases();updateConstraints();}
+function showStep(){const s=steps[idx];if(!s){render(T.root?snapshot(T.root):null,[],'');return;}
+  render(s.snap,s.hl,s.tag);
+  const tagLabel=s.tag?`<span class="tag" style="background:${colorFor(s.tag)}22;color:${colorFor(s.tag)};border:1px solid ${colorFor(s.tag)}55">${s.tag}</span>`:'';
+  document.getElementById('msg').innerHTML=tagLabel+'<span class="msg">'+escapeHtmlKeep(s.msg)+'</span>';
+  document.getElementById('stepInfo').textContent=`step ${idx+1} / ${steps.length}`;
+  document.getElementById('prevBtn').disabled=idx===0;
+  document.getElementById('nextBtn').disabled=idx===steps.length-1;}
+function escapeHtmlKeep(s){return(''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function next(){if(idx<steps.length-1){idx++;showStep();}else stopPlay();}
+function prev(){if(idx>0){idx--;showStep();}}
+function playPause(){if(timer)stopPlay();else startPlay();}
+function startPlay(){if(idx>=steps.length-1)idx=0;
+  document.getElementById('playBtn').textContent='⏸ Pause';
+  const spd=+document.getElementById('speed').value;
+  timer=setInterval(()=>{if(idx>=steps.length-1){stopPlay();}else{idx++;showStep();}},spd);}
+function stopPlay(){if(timer)clearInterval(timer);timer=null;document.getElementById('playBtn').textContent='▶ Play';}
+
+/* ================= cases tracker ================= */
+const CASES=[
+ ['leaf-room','① Insert — leaf has room'],
+ ['leaf-split','② Insert — leaf split (copy up)'],
+ ['root-split','③ Insert — new root (height +1)'],
+ ['int-split','④ Insert — internal split (push up)'],
+ ['no-underflow','⑤ Delete — no underflow'],
+ ['underflow','⑥ Delete — underflow detected'],
+ ['merge','⑦ Delete — leaf merge (coalesce)'],
+ ['redistribute','⑧ Delete — leaf redistribute (borrow)'],
+ ['merge-int','⑨ Delete — internal merge'],
+ ['root-shrink','⑩ Delete — root shrink (height −1)'],
+ ['redistribute-int','⑪ Delete — internal redistribute'],
+ ['cascade','⤴ Delete — underflow cascades up'],
+];
+const hitCases=new Set();
+function buildCaseList(){const el=document.getElementById('caseList');el.innerHTML='';
+  CASES.forEach(([tag,label])=>{const d=document.createElement('label');d.dataset.tag=tag;
+    d.innerHTML=`<span class="chk"></span><span>${label}</span>`;el.appendChild(d);});}
+function markCases(){steps.forEach(s=>{if(s.tag)hitCases.add(s.tag);});
+  document.querySelectorAll('#caseList label').forEach(l=>{
+    if(hitCases.has(l.dataset.tag)){l.classList.add('hit');l.querySelector('.chk').textContent='✓';}});}
+
+/* ================= constraints panel ================= */
+function updateConstraints(){const n=T.n;
+  document.getElementById('constraints').innerHTML=
+   `<b>Invariants for n=${n}:</b> &nbsp; leaf keys <code>${leafMin(n)}…${n-1}</code> &nbsp;·&nbsp; `+
+   `internal children <code>${intMinCh(n)}…${n}</code> (keys <code>${intMinCh(n)-1}…${n-1}</code>) &nbsp;·&nbsp; `+
+   `root-internal children <code>2…${n}</code> &nbsp;·&nbsp; root-leaf keys <code>0…${n-1}</code> &nbsp;·&nbsp; `+
+   `all leaves at equal depth &nbsp;·&nbsp; height ≤ <code>⌈log<sub>⌈n/2⌉</sub>(K)⌉</code>.`;}
+
+/* ================= UI wiring ================= */
+function resetTree(n){stopPlay();T={root:null,n:n,idc:0};steps=[];idx=0;
+  render(null,[],'');document.getElementById('stepInfo').textContent='step 0 / 0';
+  document.getElementById('msg').innerHTML='<span class="constraints">Empty tree. Insert a key or choose a preset.</span>';
+  updateConstraints();}
+function curKey(){return document.getElementById('keyIn').value.trim();}
+
+document.getElementById('applyN').onclick=()=>{let n=Math.max(3,Math.min(9,+document.getElementById('nVal').value||4));
+  document.getElementById('nVal').value=n;resetTree(n);};
+document.getElementById('insBtn').onclick=()=>{const k=curKey();if(k!=='')runOp(s=>insert(k,s));document.getElementById('keyIn').value='';document.getElementById('keyIn').focus();};
+document.getElementById('delBtn').onclick=()=>{const k=curKey();if(k!=='')runOp(s=>del(k,s));document.getElementById('keyIn').value='';document.getElementById('keyIn').focus();};
+document.getElementById('srchBtn').onclick=()=>{const k=curKey();if(k!=='')runOp(s=>search(k,s));};
+document.getElementById('keyIn').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('insBtn').click();});
+document.getElementById('bulkBtn').onclick=()=>{const raw=document.getElementById('bulkIn').value.split(/[,\s]+/).filter(x=>x!=='');
+  runOp(s=>{raw.forEach(k=>insert(k,s));});};
+document.getElementById('clearBtn').onclick=()=>resetTree(T.n);
+
+document.getElementById('firstBtn').onclick=()=>{stopPlay();idx=0;showStep();};
+document.getElementById('lastBtn').onclick=()=>{stopPlay();idx=steps.length-1;showStep();};
+document.getElementById('prevBtn').onclick=()=>{stopPlay();prev();};
+document.getElementById('nextBtn').onclick=()=>{stopPlay();next();};
+document.getElementById('playBtn').onclick=playPause;
+
+/* presets */
+const SEQ={
+  instr4:{n:4,ops:[['i','10'],['i','20'],['i','30'],['i','40'],['i','15'],['i','25'],['i','35'],['i','5']]},
+  instr6:{n:6,ops:[['i','10'],['i','20'],['i','30'],['i','40'],['i','50'],['i','15'],['i','25'],['i','35'],['i','45'],['i','5'],['i','55']]},
+  // n=4: forces leaf-room, leaf-split, root-split, internal split (push up)
+  allInsert:{n:4,ops:[['i','10'],['i','20'],['i','30'],['i','40'],['i','50'],['i','60'],['i','70'],['i','5'],['i','15'],['i','25']]},
+  // n=5: build 10..160, then a delete order (verified) that forces EVERY delete case:
+  // no-underflow, leaf redistribute, leaf merge, internal merge, internal redistribute, root shrink, cascade
+  allDelete:{n:5,ops:[['i','10'],['i','20'],['i','30'],['i','40'],['i','50'],['i','60'],['i','70'],['i','80'],['i','90'],['i','100'],['i','110'],['i','120'],['i','130'],['i','140'],['i','150'],['i','160'],
+                      ['d','30'],['d','40'],['d','60'],['d','20'],['d','50'],['d','110'],['d','160'],['d','100'],['d','10'],['d','80']]},
+};
+document.querySelectorAll('[data-seq]').forEach(b=>b.onclick=()=>{const c=SEQ[b.dataset.seq];
+  document.getElementById('nVal').value=c.n;resetTree(c.n);
+  runOp(s=>{c.ops.forEach(([op,k])=>op==='i'?insert(k,s):del(k,s));});
+  idx=0;showStep();});
+
+/* init */
+buildCaseList();resetTree(4);
+</script>
+</body>
+</html>
