@@ -698,3 +698,12 @@ Google, binlerce node'da çalışabilen ve makine arızalarını transparan yön
 - **Sharding vs Key-value store:** Sharding manuel partition (transparent değil); key-value store otomatik partition/replication/load balancing (NoSQL).
 - **Three-layer vs Two-layer web:** Three-layer ayrı web+app+db (CGI, fazla overhead); Two-layer web+app birleşik (modern standart, connectionless HTTP + cookie).
 - **MVC:** Model (business logic), View (data access/sonuç gösterimi), Controller (event'leri yönetir).
+
+--
+
+## Babadan notlar
+- RDF => (ID1, ID2, ID3) (yani triple)
+- SPARQL => RDF için özelleşmiş query altyapısı
+- Spatial data => lokasyon dataları
+- TF => Bir text'in dökümanda bulunma sıklığı
+- IDF => TF'nin tersi
