@@ -192,6 +192,8 @@ Birçok database **geometry ve geography** data type'larını destekler (örn. S
 
 ## 2) Indexing & B-Trees Part 1 (Chapter 14)
 
+> To see simulation, check: [simulation link](https://unexondev.github.io/dmfs/BPlusTree_Simulation.html)
+
 ### Basic Concepts
 Birçok query bir file'daki kayıtların yalnızca küçük bir kısmına başvurur (örn. "Physics bölümündeki tüm instructor'ları bul"). Her tuple'ı okumak verimsizdir. **Index**, kitabın sonundaki dizin gibi çalışır: aranan değer sorted order'da tutulur, böylece istenen kaydın hangi disk block'ta olduğu hızlıca bulunur ve sadece o block fetch edilir.
 
