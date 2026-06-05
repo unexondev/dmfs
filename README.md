@@ -707,3 +707,6 @@ Google, binlerce node'da çalışabilen ve makine arızalarını transparan yön
 - Spatial data => lokasyon dataları
 - TF => Bir text'in dökümanda bulunma sıklığı
 - IDF => TF'nin tersi
+- Dense index => [id_0 -> row_0], [id_1 -> row_1] ...
+- Sparse index => [id_0 -> block_0], [id_1 -> block_1] while block_0, block_1, ... consists of rows like [row_0, row_1, ...]
+- Multilevel index (sparse'in sparse'i gibi) => [id_0 -> block_of_blocks_0], ... while [block_of_blocks_0 -> block_0] and blocks consist of rows like [row_0, row_1, ...]
