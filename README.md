@@ -78,6 +78,7 @@ XML daha eski bir gösterimdir; configuration bilgisi saklamak ve data exchange 
 ```
 Tag'ler hierarchical olabilir. Relational schema'nın aksine yeni tag'ler kolayca, uygun isimlerle eklenebilir. Data **self-documenting**'dir: insan, isme bakarak parçanın ne anlama geldiğini anlayabilir/tahmin edebilir.
 
+
 XML data exchange örneği — purchase order: bir organizasyon tarafından üretilip başka birine gönderilir, çeşitli bilgi içerir; iki taraf hangi tag'lerin geçeceği ve ne anlama geldiği konusunda anlaşmak zorundadır.
 ```xml
 <purchase_order>
